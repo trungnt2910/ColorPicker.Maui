@@ -1,4 +1,4 @@
-  
+
 name: CI
 
 on:
@@ -32,6 +32,11 @@ jobs:
       BUILD_CONFIG: 'Release'
       # Avoid building the app as building Android and iOS apps in Release mode is expensive.
       SOLUTION: 'ColorPicker.Maui.NoApp.sln'
+      PROJECT_NAME: 'ColorPicker.Maui'
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      contents: write      # to push to gh-pages branch
 
     runs-on: windows-latest
 
@@ -40,7 +45,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-          
+
     - name: Install GitVersion
       uses: gittools/actions/gitversion/setup@v0.9.10
       with:
@@ -70,6 +75,42 @@ jobs:
 
     - name: Run tests
       run: dotnet test $env:SOLUTION /p:Configuration=$env:BUILD_CONFIG /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura --no-restore --no-build -l "console;verbosity=detailed"
+
+    - name: Download live-documenter
+      uses: robinraju/release-downloader@v1.5
+      with:
+        repository: "barry-jones/live-documenter"
+        latest: true
+        fileName: "livedocumenter*.zip"
+        tarBall: false
+        zipBall: false
+
+    - name: Install live-documenter
+      run: |
+        Expand-Archive -Path livedocumenter*.zip -DestinationPath build/livedocumenter
+      shell: pwsh
+
+    - name: Generate documentation
+      run: |
+        # Avoid generating using the Android library as it has a lot of generated "Resources" code.
+        # We'll explicitly select the Windows target.
+        $dllName = (Get-ChildItem -Path ${{ env.PROJECT_NAME }}/bin/${{ env.BUILD_CONFIG }}/net*-windows*/ -Filter ${{ env.PROJECT_NAME }}.dll -Recurse | Select-Object -First 1 -ExpandProperty FullName)
+        ./build/livedocumenter/exporter/net471/exporter $dllName -to ./build/docs -format web-refresh.ldec
+        mv "./build/docs/LD Export*" "./build/docs/web"
+      shell: pwsh
+
+    - name: Deploy documentation to GitHub pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: ${{ github.ref == 'refs/heads/master' }}
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./build/docs/web
+
+    - name: Publish documentation artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: docs.${{ steps.gitversion.outputs.semVer }}
+        path: ./build/docs/web/**
 
     - name: Build nuget packages
       run: msbuild -t:pack $env:SOLUTION -p:Configuration=$env:BUILD_CONFIG -p:PackageVersion=${{ steps.gitversion.outputs.semVer }}
