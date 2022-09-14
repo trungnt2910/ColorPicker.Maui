@@ -23,9 +23,16 @@ create control
     ColorListDirection="Horizontal"
     GradientColorStyle="DarkToColorsToLightStyle"
     PickedColorChanged="ColorPicker_PickedColorChanged"
-    PointerCircleBorderUnits="0.3"
-    PointerCircleDiameterUnits="0.7">
+    PickedColor="Blue">
 </cp:ColorPicker>
 ```
 
 more to come...  🔜
+
+## Exclusive features
+- Setting `PickedColor` field. This enables many features such as two-way binding and setting an initial picked color.
+- Improved performance due to less unnecessary re-rendering.
+- Some other bug fixes (`PointerRingPositionXUnits`, `PointerRingPositionYUnits` properties are fixed).
+
+## Documentation
+You can access the library's latest documentation [here](https://trungnt2910.github.io/ColorPicker.Maui/).
