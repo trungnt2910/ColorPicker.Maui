@@ -43,7 +43,7 @@
 			<_Parameter2>ColorPicker.Maui</_Parameter2>
 		</AssemblyAttribute>
 	</ItemGroup>
-	
+
 	<ItemGroup>
 		<PackageReference
 			Include="SkiaSharp.Views.Maui.Controls"
@@ -57,16 +57,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None
-			Include="..\Art\icon.png"
-			Pack="true"
-			PackagePath="\" />
 		<Folder Include="Platforms\Android\" />
 		<Folder Include="Platforms\MacCatalyst\" />
 		<Folder Include="Platforms\Windows\" />
 	</ItemGroup>
-	
+
 	<ItemGroup>
+		<None Include="..\Art\icon-transparent.png" Pack="true" PackagePath="\icon.png" />
 		<None Include="..\README.md" Pack="true" PackagePath="\" />
 		<None Include="..\LICENSE.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
