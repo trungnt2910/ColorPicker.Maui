@@ -194,10 +194,9 @@ public partial class ColorPicker : ContentView
             },
             propertyChanged: (bindable, value, newValue) =>
             {
-                if (newValue != null)
+                if ((double)newValue != (double)value)
                 {
-                    ((ColorPicker)bindable).SetPointerRingPosition(
-                        (double)newValue, ((ColorPicker)bindable).PointerRingPositionYUnits);
+                    ((ColorPicker)bindable).CanvasView.InvalidateSurface();
                 }
                 else
                     ((ColorPicker)bindable).ColorFlowDirection = default;
@@ -228,10 +227,9 @@ public partial class ColorPicker : ContentView
             },
             propertyChanged: (bindable, value, newValue) =>
             {
-                if (newValue != null)
+                if ((double)newValue != (double)value)
                 {
-                    ((ColorPicker)bindable).SetPointerRingPosition(
-                        ((ColorPicker)bindable).PointerRingPositionXUnits, (double)newValue);
+                    ((ColorPicker)bindable).CanvasView.InvalidateSurface();
                 }
                 else
                     ((ColorPicker)bindable).ColorFlowDirection = default;
@@ -247,10 +245,6 @@ public partial class ColorPicker : ContentView
         get { return (double)GetValue(PointerRingPositionYUnitsProperty); }
         set { SetValue(PointerRingPositionYUnitsProperty, value); }
     }
-
-
-    private SKPoint _lastTouchPoint = new SKPoint();
-    private bool _checkPointerInitPositionDone = false;
 
     private void CanvasView_OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
     {
@@ -314,15 +308,9 @@ public partial class ColorPicker : ContentView
             }
         }
 
-        if (!_checkPointerInitPositionDone)
-        {
-            var x = ((float)skCanvasWidth * (float)PointerRingPositionXUnits);
-            var y = ((float)skCanvasHeight * (float)PointerRingPositionYUnits);
-
-            _lastTouchPoint = new SKPoint(x, y);
-
-            _checkPointerInitPositionDone = true;
-        }
+        var touchPoint = new SKPoint(
+            x: skCanvasWidth * (float)PointerRingPositionXUnits,
+            y: skCanvasHeight * (float)PointerRingPositionYUnits);
 
         // Picking the Pixel Color values on the Touch Point
 
@@ -341,7 +329,7 @@ public partial class ColorPicker : ContentView
             skSurface.ReadPixels(skImageInfo,
                 dstpixels,
                 skImageInfo.RowBytes,
-                (int)_lastTouchPoint.X, (int)_lastTouchPoint.Y);
+                (int)touchPoint.X, (int)touchPoint.Y);
 
             // access the color
             touchPointColor = bitmap.GetPixel(0, 0);
@@ -365,8 +353,8 @@ public partial class ColorPicker : ContentView
 
             // Outer circle of the Pointer (Ring)
             skCanvas.DrawCircle(
-                _lastTouchPoint.X,
-                _lastTouchPoint.Y,
+                touchPoint.X,
+                touchPoint.Y,
                 (pointerRingDiameter / 2), paintTouchPoint);
 
             // Draw another circle with picked color
@@ -378,8 +366,8 @@ public partial class ColorPicker : ContentView
 
             // Inner circle of the Pointer (Ring)
             skCanvas.DrawCircle(
-                _lastTouchPoint.X,
-                _lastTouchPoint.Y,
+                touchPoint.X,
+                touchPoint.Y,
                 ((pointerRingDiameter
                         - pointerRingInnerCircleDiameter) / 2), paintTouchPoint);
         }
@@ -396,8 +384,6 @@ public partial class ColorPicker : ContentView
             return;
 #endif
 
-        _lastTouchPoint = e.Location;
-
         var canvasSize = CanvasView.CanvasSize;
 
         // Check for each touch point XY position to be inside Canvas
@@ -410,8 +396,9 @@ public partial class ColorPicker : ContentView
             PointerRingPositionXUnits = e.Location.X / canvasSize.Width;
             PointerRingPositionYUnits = e.Location.Y / canvasSize.Height;
 
-            // update the Canvas as you wish
-            CanvasView.InvalidateSurface();
+            // The update here is not necessary, as setting the properties
+            // PointerRingPosition[X/Y]Units already updates the CanvasView
+            // CanvasView.InvalidateSurface();
         }
     }
 
@@ -469,18 +456,6 @@ public partial class ColorPicker : ContentView
                         SKColors.Black
                 };
         }
-    }
-
-    private void SetPointerRingPosition(double xPositionUnits, double yPositionUnits)
-    {
-        var xPosition = CanvasView.CanvasSize.Width
-                        * xPositionUnits; // Calculate actual X Position
-        var yPosition = CanvasView.CanvasSize.Height
-                        * yPositionUnits; // Calculate actual Y Position
-
-        // Update as last touch Position on Canvas
-        _lastTouchPoint = new SKPoint(Convert.ToSingle(xPosition), Convert.ToSingle(yPosition));
-        CanvasView.InvalidateSurface();
     }
 }
 
