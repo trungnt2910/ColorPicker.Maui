@@ -6,11 +6,17 @@ using SKPaintSurfaceEventArgs = SkiaSharp.Views.Maui.SKPaintSurfaceEventArgs;
 
 namespace ColorPicker.Maui;
 
+/// <summary>
+/// A control that allows the user to pick a <see cref="Color"/>.
+/// </summary>
 public partial class ColorPicker : ContentView
 {
     private Color? _pendingPickedColor = null;
     private bool _rendering = false;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ColorPicker"/> class.
+    /// </summary>
 	public ColorPicker()
 	{
 		InitializeComponent();
@@ -603,19 +609,52 @@ public partial class ColorPicker : ContentView
     }
 }
 
+/// <summary>
+/// Enumerate values that describe color spectrum styles of a <see cref="ColorPicker"/>.
+/// </summary>
 public enum ColorSpectrumStyle
 {
+    /// <summary>
+    /// Hue only style.
+    /// </summary>
     HueOnlyStyle,
+    /// <summary>
+    /// Hue to shade style.
+    /// </summary>
     HueToShadeStyle,
+    /// <summary>
+    /// Shade to hue style.
+    /// </summary>
     ShadeToHueStyle,
+    /// <summary>
+    /// Hue to tint style.
+    /// </summary>
     HueToTintStyle,
+    /// <summary>
+    /// Tint to hue style.
+    /// </summary>
     TintToHueStyle,
+    /// <summary>
+    /// Tint to hue to shade style.
+    /// </summary>
     TintToHueToShadeStyle,
+    /// <summary>
+    /// Shade to hue to tint style.
+    /// </summary>
     ShadeToHueToTintStyle
 }
 
+/// <summary>
+/// Enumerate values that describe color flow directions of a <see cref="ColorPicker"/>.
+/// </summary>
 public enum ColorFlowDirection
 {
+    /// <summary>
+    /// Indicates that the colors will flow horizontally.
+    /// </summary>
     Horizontal,
+    /// <summary>
+    /// Indicates that the colors will flow vertically.
+    /// </summary>
     Vertical
 }

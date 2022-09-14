@@ -1,5 +1,8 @@
 ﻿namespace ColorPicker.Maui;
 
+/// <summary>
+/// Event arguments for PickedColorChanged events. Provides old and new picked color values.
+/// </summary>
 public class PickedColorChangedEventArgs : EventArgs
 {
     /// <summary>
