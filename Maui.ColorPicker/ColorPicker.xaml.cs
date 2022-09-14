@@ -80,7 +80,7 @@ public partial class ColorPicker : ContentView
                     if (newValue != null)
                         ((ColorPicker)bindable).CanvasView.InvalidateSurface();
                     else
-                        ((ColorPicker)bindable).BaseColorList = default;
+                        ((ColorPicker)bindable).BaseColorList = Array.Empty<string>();
                 });
 
     /// <summary>
@@ -270,9 +270,13 @@ public partial class ColorPicker : ContentView
 
             // Initiate the base Color list
             ColorTypeConverter converter = new ColorTypeConverter();
-            System.Collections.Generic.List<SKColor> colors = new System.Collections.Generic.List<SKColor>();
-            foreach (var color in BaseColorList)
-                colors.Add(((Color)converter.ConvertFromInvariantString(color.ToString())).ToSKColor());
+            var colors = BaseColorList
+                .Cast<object>()
+                .Select(color => converter.ConvertFromInvariantString(color?.ToString() ?? string.Empty))
+                .Where(color => color != null)
+                .Cast<Color>()
+                .Select(color => color.ToSKColor())
+                .ToList();
 
             // create the gradient shader between base Colors
             using (var shader = SKShader.CreateLinearGradient(
