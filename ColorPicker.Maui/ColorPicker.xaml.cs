@@ -1,15 +1,12 @@
 using Microsoft.Maui.Graphics.Converters;
-using SkiaSharp;
-using SkiaSharp.Views.Maui;
 using System.Collections;
-using SKPaintSurfaceEventArgs = SkiaSharp.Views.Maui.SKPaintSurfaceEventArgs;
 
 namespace ColorPicker.Maui;
 
 /// <summary>
 /// A control that allows the user to pick a <see cref="Color"/>.
 /// </summary>
-public partial class ColorPicker : ContentView
+public partial class ColorPicker : ContentView, IDrawable
 {
     private Color? _pendingPickedColor = null;
     private bool _rendering = false;
@@ -51,7 +48,7 @@ public partial class ColorPicker : ContentView
                     if (!picker._rendering)
                     {
                         picker._pendingPickedColor = (Color)newValue;
-                        picker.CanvasView.InvalidateSurface();
+                        picker.CanvasView.Invalidate();
                     }
                 }
             });
@@ -94,7 +91,7 @@ public partial class ColorPicker : ContentView
          propertyChanged: (bindable, value, newValue) =>
          {
              if (newValue != null)
-                 ((ColorPicker)bindable).CanvasView.InvalidateSurface();
+                 ((ColorPicker)bindable).CanvasView.Invalidate();
              else
                  ((ColorPicker)bindable).ColorSpectrumStyle = default;
          });
@@ -130,7 +127,7 @@ public partial class ColorPicker : ContentView
                 propertyChanged: (bindable, value, newValue) =>
                 {
                     if (newValue != null)
-                        ((ColorPicker)bindable).CanvasView.InvalidateSurface();
+                        ((ColorPicker)bindable).CanvasView.Invalidate();
                     else
                         ((ColorPicker)bindable).BaseColorList = Array.Empty<string>();
                 });
@@ -157,7 +154,7 @@ public partial class ColorPicker : ContentView
             propertyChanged: (bindable, value, newValue) =>
             {
                 if (newValue != null)
-                    ((ColorPicker)bindable).CanvasView.InvalidateSurface();
+                    ((ColorPicker)bindable).CanvasView.Invalidate();
                 else
                     ((ColorPicker)bindable).ColorFlowDirection = default;
             });
@@ -191,7 +188,7 @@ public partial class ColorPicker : ContentView
             propertyChanged: (bindable, value, newValue) =>
             {
                 if (newValue != null)
-                    ((ColorPicker)bindable).CanvasView.InvalidateSurface();
+                    ((ColorPicker)bindable).CanvasView.Invalidate();
                 else
                     ((ColorPicker)bindable).PointerRingDiameterUnits = default;
             });
@@ -226,7 +223,7 @@ public partial class ColorPicker : ContentView
             propertyChanged: (bindable, value, newValue) =>
             {
                 if (newValue != null)
-                    ((ColorPicker)bindable).CanvasView.InvalidateSurface();
+                    ((ColorPicker)bindable).CanvasView.Invalidate();
                 else
                     ((ColorPicker)bindable).PointerRingBorderUnits = default;
             });
@@ -263,7 +260,7 @@ public partial class ColorPicker : ContentView
                 if ((double)newValue != (double)value && bindable is ColorPicker picker && !picker._rendering)
                 {
                     picker._pendingPickedColor = null;
-                    picker.CanvasView.InvalidateSurface();
+                    picker.CanvasView.Invalidate();
                 }
             });
 
@@ -305,7 +302,7 @@ public partial class ColorPicker : ContentView
                 if ((double)newValue != (double)value && bindable is ColorPicker picker && !picker._rendering)
                 {
                     picker._pendingPickedColor = null;
-                    picker.CanvasView.InvalidateSurface();
+                    picker.CanvasView.Invalidate();
                 }
             });
 
@@ -328,333 +325,114 @@ public partial class ColorPicker : ContentView
         }
     }
 
-    private void CanvasView_OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
+    /// <summary>
+    /// To be added.
+    /// </summary>
+    /// <param name="canvas"></param>
+    /// <param name="rect"></param>
+    public void Draw(ICanvas canvas, RectF rect)
     {
         _rendering = true;
 
-        var skImageInfo = e.Info;
-        var skSurface = e.Surface;
-        var skCanvas = skSurface.Canvas;
+        canvas.Antialias = true;
 
-        var skCanvasWidth = skImageInfo.Width;
-        var skCanvasHeight = skImageInfo.Height;
-
-        skCanvas.Clear(SKColors.White);
+        // Initiate the base Color list
+        var converter = new ColorTypeConverter();
+        IList<Color> colors = BaseColorList
+            .Cast<object>()
+            .Select(color => converter.ConvertFromInvariantString(color?.ToString() ?? string.Empty))
+            .Where(color => color != null)
+            .Cast<Color>()
+            .ToList();
 
         // Draw gradient rainbow Color spectrum
-        using (var paint = new SKPaint())
-        {
-            paint.IsAntialias = true;
-
-            // Initiate the base Color list
-            ColorTypeConverter converter = new ColorTypeConverter();
-            var colors = BaseColorList
-                .Cast<object>()
-                .Select(color => converter.ConvertFromInvariantString(color?.ToString() ?? string.Empty))
-                .Where(color => color != null)
-                .Cast<Color>()
-                .Select(color => color.ToSKColor())
-                .ToList();
-
-            // create the gradient shader between base Colors
-            using (var shader = SKShader.CreateLinearGradient(
-                new SKPoint(0, 0),
-                ColorFlowDirection == ColorFlowDirection.Horizontal ?
-                    new SKPoint(skCanvasWidth, 0) : new SKPoint(0, skCanvasHeight),
-                colors.ToArray(),
-                null,
-                SKShaderTileMode.Clamp))
-            {
-                paint.Shader = shader;
-                skCanvas.DrawPaint(paint);
-            }
-        }
+        canvas.DrawGradientRectangle(rect, ColorFlowDirection, colors);
 
         // Draw secondary gradient color spectrum
-        using (var paint = new SKPaint())
-        {
-            paint.IsAntialias = true;
-
-            // Initiate gradient color spectrum style layer
-            var colors = GetSecondaryLayerColors(ColorSpectrumStyle);
-
-            // create the gradient shader between secondary colors
-            using (var shader = SKShader.CreateLinearGradient(
-                new SKPoint(0, 0),
-                ColorFlowDirection == ColorFlowDirection.Horizontal ?
-                    new SKPoint(0, skCanvasHeight) : new SKPoint(skCanvasWidth, 0),
-                colors,
-                null,
-                SKShaderTileMode.Clamp))
-            {
-                paint.Shader = shader;
-                skCanvas.DrawPaint(paint);
-            }
-        }
-
-        SKPoint touchPoint;
-        // Represent the color of the current Touch point
-        SKColor touchPointColor;
-
-        if (_pendingPickedColor == null)
-        {
-            // The user hasn't explicitly specified the touchPoint color.
-            // The touchPoint can therefore be calculated quickly.
-            touchPoint = new SKPoint(
-                x: skCanvasWidth * (float)PointerRingPositionXUnits,
-                y: skCanvasHeight * (float)PointerRingPositionYUnits);
-            // Picking the Pixel Color values on the Touch Point
-
-            // Efficient and fast
-            // https://forums.xamarin.com/discussion/92899/read-a-pixel-info-from-a-canvas
-            // create the 1x1 bitmap (auto allocates the pixel buffer)
-            using (SKBitmap bitmap = new SKBitmap(skImageInfo))
-            {
-                // get the pixel buffer for the bitmap
-                IntPtr dstpixels = bitmap.GetPixels();
-
-                // read the surface into the bitmap
-                skSurface.ReadPixels(skImageInfo,
-                    dstpixels,
-                    skImageInfo.RowBytes,
-                    (int)touchPoint.X, (int)touchPoint.Y);
-
-                // access the color
-                touchPointColor = bitmap.GetPixel(0, 0);
-            }
-
-            // Set selected color
-            SetValue(PickedColorProperty, touchPointColor.ToMauiColor());
-        }
-        else
-        {
-            // We'll have to brute force the board to find the nearest color.
-            touchPointColor = _pendingPickedColor.ToSKColor();
-            using var bitmap = new SKBitmap(skImageInfo);
-            var dstpixels = bitmap.GetPixels();
-            skSurface.ReadPixels(skImageInfo, dstpixels, skImageInfo.RowBytes, 0, 0);
-
-            int desiredX = -1;
-            int desiredY = -1;
-            int nearestDesiredX = -1;
-            int nearestDesiredY = -1;
-            int distance = int.MaxValue;
-
-            for (int x = 0; x < bitmap.Width; ++x)
-            {
-                for (int y = 0; y < bitmap.Height; ++y)
-                {
-                    var currentColor = bitmap.GetPixel(x, y);
-                    if (currentColor == touchPointColor)
-                    {
-                        desiredX = x;
-                        desiredY = y;
-                        goto found;
-                    }
-                    else
-                    {
-                        var currentDistance =
-                            Math.Abs(currentColor.Red - touchPointColor.Red) +
-                            Math.Abs(currentColor.Green - touchPointColor.Green) +
-                            Math.Abs(currentColor.Blue - touchPointColor.Blue) +
-                            Math.Abs(currentColor.Alpha - touchPointColor.Alpha);
-
-                        if (currentDistance < distance)
-                        {
-                            distance = currentDistance;
-                            nearestDesiredX = x;
-                            nearestDesiredY = y;
-                        }
-                    }
-                }
-            }
-        found:
-            if (desiredX != -1 && desiredY != -1)
-            {
-                touchPoint = new SKPoint(desiredX, desiredY);
-            }
-            else
-            {
-                touchPoint = new SKPoint(nearestDesiredX, nearestDesiredY);
-            }
-            
-            // Set pointer position.
-            SetValue(PointerRingPositionXUnitsProperty, (double)touchPoint.X / skCanvasWidth);
-            SetValue(PointerRingPositionYUnitsProperty, (double)touchPoint.Y / skCanvasHeight);
-        }
-
-        // Painting the Touch point
-        using (SKPaint paintTouchPoint = new SKPaint())
-        {
-            paintTouchPoint.Style = SKPaintStyle.Fill;
-            paintTouchPoint.Color = SKColors.White;
-            paintTouchPoint.IsAntialias = true;
-
-            var canvasLongestLength = (skCanvasWidth > skCanvasHeight)
-                    ? skCanvasWidth : skCanvasHeight;
-
-            // Calculate 1/10th of the units value for scaling
-            var pointerRingDiameterUnitsScaled = (float)PointerRingDiameterUnits / 10f;
-            // Calculate against Longest Length of Canvas 
-            var pointerRingDiameter = (float)canvasLongestLength
-                                                    * pointerRingDiameterUnitsScaled;
-
-            // Outer circle of the Pointer (Ring)
-            skCanvas.DrawCircle(
-                touchPoint.X,
-                touchPoint.Y,
-                (pointerRingDiameter / 2), paintTouchPoint);
-
-            // Draw another circle with picked color
-            paintTouchPoint.Color = touchPointColor;
-
-            // Calculate against Pointer Circle
-            var pointerRingInnerCircleDiameter = (float)pointerRingDiameter
-                                                            * (float)PointerRingBorderUnits;
-
-            // Inner circle of the Pointer (Ring)
-            skCanvas.DrawCircle(
-                touchPoint.X,
-                touchPoint.Y,
-                ((pointerRingDiameter
-                        - pointerRingInnerCircleDiameter) / 2), paintTouchPoint);
-        }
+        canvas.DrawGradientRectangle(rect,
+            ColorFlowDirection == ColorFlowDirection.Horizontal ?
+                ColorFlowDirection.Vertical : ColorFlowDirection.Horizontal,
+            GetSecondaryLayerColors(ColorSpectrumStyle)
+            );
 
         _rendering = false;
     }
 
-    private void CanvasView_OnTouch(object sender, SKTouchEventArgs e)
+    private void CanvasView_Interaction(object sender, TouchEventArgs e)
     {
-#if WINDOWS
-        if (!e.InContact)
-            return;
-#endif
-
-        var canvasSize = CanvasView.CanvasSize;
+        var touch = e.Touches.FirstOrDefault();
 
         // Check for each touch point XY position to be inside Canvas
         // Ignore any Touch event occured outside the Canvas region 
-        if ((e.Location.X > 0 && e.Location.X < canvasSize.Width) &&
-            (e.Location.Y > 0 && e.Location.Y < canvasSize.Height))
+        if (touch.X > 0 && touch.X < CanvasView.Width &&
+            touch.Y > 0 && touch.Y < CanvasView.Height)
         {
-            e.Handled = true;
-
             _pendingPickedColor = null;
 
             // Prevent double re-rendering.
             _rendering = true;
-            SetValue(PointerRingPositionXUnitsProperty, e.Location.X / canvasSize.Width);
-            SetValue(PointerRingPositionYUnitsProperty, e.Location.Y / canvasSize.Height);
+            SetValue(PointerRingPositionXUnitsProperty, touch.X / CanvasView.Width);
+            SetValue(PointerRingPositionYUnitsProperty, touch.Y / CanvasView.Height);
             _rendering = false;
 
             // Explicitly render things now.
-            CanvasView.InvalidateSurface();
+            CanvasView.Invalidate();
         }
     }
 
-    private SKColor[] GetSecondaryLayerColors(ColorSpectrumStyle colorSpectrumStyle)
+    private Color[] GetSecondaryLayerColors(ColorSpectrumStyle colorSpectrumStyle)
     {
         switch (colorSpectrumStyle)
         {
             case ColorSpectrumStyle.HueOnlyStyle:
-                return new SKColor[]
+                return new Color[]
                 {
-                        SKColors.Transparent
+                        Colors.Transparent
                 };
             case ColorSpectrumStyle.HueToShadeStyle:
-                return new SKColor[]
+                return new Color[]
                 {
-                        SKColors.Transparent,
-                        SKColors.Black
+                        Colors.Transparent,
+                        Colors.Black
                 };
             case ColorSpectrumStyle.ShadeToHueStyle:
-                return new SKColor[]
+                return new Color[]
                 {
-                        SKColors.Black,
-                        SKColors.Transparent
+                        Colors.Black,
+                        Colors.Transparent
                 };
             case ColorSpectrumStyle.HueToTintStyle:
-                return new SKColor[]
+                return new Color[]
                 {
-                        SKColors.Transparent,
-                        SKColors.White
+                        Colors.Transparent,
+                        Colors.White
                 };
             case ColorSpectrumStyle.TintToHueStyle:
-                return new SKColor[]
+                return new Color[]
                 {
-                        SKColors.White,
-                        SKColors.Transparent
+                        Colors.White,
+                        Colors.Transparent
                 };
             case ColorSpectrumStyle.TintToHueToShadeStyle:
-                return new SKColor[]
+                return new Color[]
                 {
-                        SKColors.White,
-                        SKColors.Transparent,
-                        SKColors.Black
+                        Colors.White,
+                        Colors.Transparent,
+                        Colors.Black
                 };
             case ColorSpectrumStyle.ShadeToHueToTintStyle:
-                return new SKColor[]
+                return new Color[]
                 {
-                        SKColors.Black,
-                        SKColors.Transparent,
-                        SKColors.White
+                        Colors.Black,
+                        Colors.Transparent,
+                        Colors.White
                 };
             default:
-                return new SKColor[]
+                return new Color[]
                 {
-                        SKColors.Transparent,
-                        SKColors.Black
+                        Colors.Transparent,
+                        Colors.Black
                 };
         }
     }
-}
-
-/// <summary>
-/// Enumerate values that describe color spectrum styles of a <see cref="ColorPicker"/>.
-/// </summary>
-public enum ColorSpectrumStyle
-{
-    /// <summary>
-    /// Hue only style.
-    /// </summary>
-    HueOnlyStyle,
-    /// <summary>
-    /// Hue to shade style.
-    /// </summary>
-    HueToShadeStyle,
-    /// <summary>
-    /// Shade to hue style.
-    /// </summary>
-    ShadeToHueStyle,
-    /// <summary>
-    /// Hue to tint style.
-    /// </summary>
-    HueToTintStyle,
-    /// <summary>
-    /// Tint to hue style.
-    /// </summary>
-    TintToHueStyle,
-    /// <summary>
-    /// Tint to hue to shade style.
-    /// </summary>
-    TintToHueToShadeStyle,
-    /// <summary>
-    /// Shade to hue to tint style.
-    /// </summary>
-    ShadeToHueToTintStyle
-}
-
-/// <summary>
-/// Enumerate values that describe color flow directions of a <see cref="ColorPicker"/>.
-/// </summary>
-public enum ColorFlowDirection
-{
-    /// <summary>
-    /// Indicates that the colors will flow horizontally.
-    /// </summary>
-    Horizontal,
-    /// <summary>
-    /// Indicates that the colors will flow vertically.
-    /// </summary>
-    Vertical
 }

@@ -45,14 +45,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference
-			Include="SkiaSharp.Views.Maui.Controls"
-			Version="2.88.2" />
+		<PackageReference Include="Microsoft.Maui.Graphics" Version="6.0.403" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<MauiXaml Update="ColorPicker.xaml">
-			<Generator>MSBuild:Compile</Generator>
+		  <Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
 	</ItemGroup>
 
@@ -82,6 +80,12 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="ColorPicker.xaml.cs">
+	    <DependentUpon>ColorPicker.xaml</DependentUpon>
+	  </Compile>
 	</ItemGroup>
 
 </Project>
