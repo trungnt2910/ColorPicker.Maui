@@ -29,8 +29,8 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageTags>color picker, maui, dotnet maui, colorpicker, control, color</PackageTags>
-		<Summary>a color picker control for .NET MAUI powered on SkiaSharp</Summary>
-		<Description>a color picker control for .NET MAUI powered on SkiaSharp</Description>
+		<Summary>Color picker control for .NET MAUI</Summary>
+		<Description>A color picker control for .NET MAUI powered by SkiaSharp</Description>
 		<Owners>trungnt2910</Owners>
 		<Authors>Joachim Leonfellner;Trung Nguyen</Authors>
 		<Copyright>Copyright (c) 2022 Trung Nguyen</Copyright>

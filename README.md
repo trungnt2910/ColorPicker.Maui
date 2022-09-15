@@ -1,7 +1,7 @@
 ![ColorPicker.Maui icon](https://raw.githubusercontent.com/trungnt2910/ColorPicker.Maui/master/Art/icon-transparent-128px.png)
 
 # ColorPicker.Maui 🎨
-a color picker control for .NET MAUI powered on SkiaSharp.
+A color picker control for .NET MAUI powered by SkiaSharp.
 
 [![CI](https://github.com/trungnt2910/ColorPicker.Maui/actions/workflows/ci.yml/badge.svg)](https://github.com/trungnt2910/ColorPicker.Maui/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/trungnt2910/ColorPicker.Maui)](LICENSE.md)
